@@ -245,9 +245,38 @@ Logistic and Regression looks good. Maybe PCA / Lasso might
 help with logistic regression accuracy. This is a warming with the logistic 
 regression model about converges? I don't know? 
 
+### Pruning Random Forest
+
+```{r}
+set.seed(7)
+
+cv.cardioTree <- cv.tree(tree.cardio, FUN = prune.misclass)
+```
+```{R}
+names(cv.cardioTree)
+cv.cardioTree
+```
+```{R}
+par(mfrow = c(1,2))
+plot(cv.cardioTree$size, cv.cardioTree$dev, type = "b")
+plot(cv.cardioTree$k, cv.cardioTree$dev, type = "b")
+
+```
+```{r}
+prune.cardio <- prune.misclass(tree.cardio, best = 2)
+plot(prune.cardio)
+text(prune.cardio, pretty = 0)
 
 
- 
+
+```
+
+```{r}
+
+
+
+```
+
 ### Under PCA
 
 
