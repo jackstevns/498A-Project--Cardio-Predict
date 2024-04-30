@@ -94,12 +94,14 @@ significant_predictors <- p_values[p_values < 0.05]
 
 ```{r}
 
-model <- glm(cardio ~ age + height + weight + ap_hi + ap_lo + cholesterol + gluc + smoke + alco + active, data = data, family = "binomial")
+model <- glm(cardio ~ age + height + weight + ap_hi + ap_lo + cholesterol + 
+               gluc + smoke + alco + active, data = data, family = "binomial")
 
 summary(model)
 
 
 ```
+
 ```{r}
 set.seed(1)
 size_d <- dim(data)[1]
@@ -108,19 +110,14 @@ train_indices <- sample(size_d, size_d * .80)
 
 ```
 
-
-
-
-
 ```{r}
-method <- c('logistic Regression', 'LDA', 'QDA', 'NB', 'knn')
+method <- c('logistic Regression', 'LDA', 'QDA', 'NB', 
+            "Random Forest Classifier", "KNN")
 ```
-
-
 
 ```{r}
 library(dplyr)
-test_errorsw <-  numeric(5)
+test_errors <-  numeric(6)
 selected <-  data
 train.X <- selected[train_indices, -which(names(selected) == "cardio")]
 train.Y <- selected[train_indices, "cardio"]
@@ -174,9 +171,7 @@ library(MASS)
 
 ```{r}
 library(e1071)
-
   # NB
-  
    nb.fit <- naiveBayes(cardio ~ . ,
                       data = selected, subset = train_indices)
   # predict class labels for the test data
@@ -189,7 +184,18 @@ library(e1071)
 ```
 
 ```{r}
+library(tree)
+tree.cardio <- tree(cardio~., selected, subset = train_indices)
 
+tree.pred <- predict(tree.cardio, test.X, type = "class")
+table(tree.pred, test.Y)
+
+(test_errors[5] <- 1 - mean(tree.pred ==  test.Y))
+
+```
+
+```{r}
+### Takes a while to run 
 
     k_test_error = numeric(6)
     k <- (1:6) *2 - 1 
@@ -207,19 +213,45 @@ library(e1071)
         }
         k_test_error[i] <- test_error
       }
-    test_errors[5] = min_test_error
 
     
-
-     accuracy_test <- numeric(5)
-    for( i in 1:5){
-      accuracy_test[i] <-  1- test_errors[i]
-    }
+    plot(k,  k_test_error, xlab = "k",
+         ylab = "test error", main = "Test error vs K")
+    lines(k, k_test_error, col = 'red')
+    points(k_value_test, min_test_error, col = "blue", pch = 19, cex = 2) 
     
+df <- data.frame(k,  k_test_error)
 
-df_interaction <- data.frame(method, test_errors, accuracy_test)
+df
 
 ```
 
- 
+```{r}
+knn.pred <- knn(train.X, test.X, train.Y, k = 7)
+test_error <- 1 - mean(test.Y == knn.pred)
+test_errors[6] <- test_error
 
+
+```
+
+
+```{r}
+accuracy_test <- 1 - test_errors
+df_interaction <- data.frame(method, test_errors, accuracy_test) 
+df_sorted <- arrange(df_interaction, test_errors)
+df_sorted
+```
+Logistic and Regression looks good. Maybe PCA / Lasso might 
+help with logistic regression accuracy. This is a warming with the logistic 
+regression model about converges? I don't know? 
+
+
+
+ 
+### Under PCA
+
+
+```{r}
+
+
+```
