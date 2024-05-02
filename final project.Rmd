@@ -79,9 +79,14 @@ plot(cardio, height)
 ```
 
 ```{r}
+sum(data$cardio == 1)
+sum(data$cardio == 0)
+````
+
+```{r}
 
 
-model <- glm(cardio ~., data = data, family = 'binomial')
+model <- glm(cardio ~., data = data, family = 'binomial', control = glm.control(maxit = 100))
 summary(model)
 ```
 
@@ -196,7 +201,7 @@ table(tree.pred, test.Y)
 
 ```{r}
 ### Takes a while to run 
-
+    library(class)
     k_test_error = numeric(6)
     k <- (1:6) *2 - 1 
     
@@ -252,35 +257,187 @@ set.seed(7)
 
 cv.cardioTree <- cv.tree(tree.cardio, FUN = prune.misclass)
 ```
+
 ```{R}
 names(cv.cardioTree)
 cv.cardioTree
 ```
+
 ```{R}
 par(mfrow = c(1,2))
 plot(cv.cardioTree$size, cv.cardioTree$dev, type = "b")
 plot(cv.cardioTree$k, cv.cardioTree$dev, type = "b")
 
 ```
+
 ```{r}
 prune.cardio <- prune.misclass(tree.cardio, best = 2)
 plot(prune.cardio)
 text(prune.cardio, pretty = 0)
-
-
-
 ```
 
 ```{r}
 
-
+tree.pred <- predict(prune.cardio, test.X, type = "class")
+mean(tree.pred == test.Y)
 
 ```
+
+
 
 ### Under PCA
+```{r}
+dim(numeric_data_scaled)
+```
+```{r}
+dim(data)
 
+```
 
 ```{r}
 
+pr.out <- prcomp(numeric_data, scale = TRUE)
+pca_scores <- as.data.frame(pr.out$x)
 
+```
+
+
+```{r}
+pca_df <- data.frame(pca_scores, non_numeric_data)
+dim(pca_df)
+
+```
+
+
+
+```{r}
+library(dplyr)
+test_errors <-  numeric(6)
+selected <-  pca_df
+train.X <- selected[train_indices, -which(names(selected) == "cardio")]
+train.Y <- selected[train_indices, "cardio"]
+test.X <- selected[-train_indices, -which(names(selected) == "cardio")]
+test.Y <- selected[-train_indices, "cardio"]
+
+
+
+```
+
+```{R}
+#logistic Classification
+glm.fit = glm(cardio ~ ., data = selected,
+            subset = train_indices, family = "binomial")
+
+#compute the estimated class probability
+glm.probs = predict(glm.fit, test.X, type = "response")
+glm.pred = rep(0, length(test.Y))
+glm.pred[glm.probs > 0.5] = 1
+
+(test_errors[1] = 1 - mean(glm.pred == test.Y))
+
+```
+
+
+### Regulization 
+
+```{r}
+library(glmnet)
+
+x <- as.matrix(train.X)  # Predictor matrix
+y <- train.Y  # Response variable
+
+# Fit model
+glmnet_model <- cv.glmnet(x, y, family = "binomial", alpha = 1)
+
+```
+
+```{r}
+best_lambda <- glmnet_model$lambda.min
+
+```
+
+```{r}
+# Predicting probabilities
+predicted_probabilities <- predict(glmnet_model, newx = as.matrix(test.X), type = "response", s = best_lambda)
+
+# Predicting class labels (you might need to specify a threshold, e.g., 0.5)
+predicted_classes <- ifelse(predicted_probabilities > 0.5, 1, 0)
+
+```
+
+#### Regulization LASSO
+
+```{R}
+1 - mean(predicted_classes == test.Y)
+```
+```{r}
+library(glmnet)
+
+x <- as.matrix(train.X)  # Predictor matrix
+y <- train.Y  # Response variable
+
+# Fit model
+glmnet_model <- cv.glmnet(x, y, family = "binomial", alpha = 0)
+
+```
+
+```{r}
+best_lambda <- glmnet_model$lambda.min
+
+```
+
+```{r}
+# Predicting probabilities
+predicted_probabilities <- predict(glmnet_model, newx = as.matrix(test.X), type = "response", s = best_lambda)
+
+# Predicting class labels (you might need to specify a threshold, e.g., 0.5)
+predicted_classes <- ifelse(predicted_probabilities > 0.5, 1, 0)
+
+```
+
+#### Regulization LASSO
+
+```{R}
+1 - mean(predicted_classes == test.Y)
+```
+
+#### Without Regulation
+
+```{r}
+test_errors[1]
+```
+
+### best Subset
+
+```{r}
+library(leaps)
+results <-  regsubsets(cardio ~ ., data = data, method = 'exhaustive')
+reg.summary <- summary(results)
+
+```
+
+
+```{r}
+plot (reg.summary$cp , xlab = " Number of Variables ", ylab = "Cp" , type = "l" )
+min_cp <- which.min(reg.summary$cp)
+points (min_cp , reg.summary$cp[min_cp], col = "red" , cex = 2 ,pch = 20)
+min_bic <- which.min(reg.summary$bic)
+plot(reg.summary$bic , xlab = "Number of Variables",
+ylab = "BIC" , type = "l" )
+points(min_bic , reg.summary$bic[min_bic], col = "red" , cex = 2 ,pch = 20)
+min_adjr2 <- which.min(reg.summary$adjr2)
+plot(reg.summary$adjr2 , xlab = "Number of Variables",
+ylab = "ADJR2" , type = "l" )
+points(min_adjr2 , reg.summary$adjr2[min_adjr2], col = "red" , cex = 2 ,pch = 20)
+
+
+
+```
+
+```{R}
+coef(results, 1)
+```
+
+```{R}
+coef(results, 8)
 ```
