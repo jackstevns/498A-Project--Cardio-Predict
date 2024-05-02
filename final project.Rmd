@@ -117,12 +117,12 @@ train_indices <- sample(size_d, size_d * .80)
 
 ```{r}
 method <- c('logistic Regression', 'LDA', 'QDA', 'NB', 
-            "Random Forest Classifier", "KNN")
+            "Decision Tree", "KNN", "Random Forest ")
 ```
 
 ```{r}
 library(dplyr)
-test_errors <-  numeric(6)
+test_errors <-  numeric(7)
 selected <-  data
 train.X <- selected[train_indices, -which(names(selected) == "cardio")]
 train.Y <- selected[train_indices, "cardio"]
@@ -231,6 +231,8 @@ df
 
 ```
 
+
+
 ```{r}
 knn.pred <- knn(train.X, test.X, train.Y, k = 7)
 test_error <- 1 - mean(test.Y == knn.pred)
@@ -239,6 +241,34 @@ test_errors[6] <- test_error
 
 ```
 
+```{r}
+library(randomForest)
+bag.cardio <- randomForest(cardio ~. , data = selected, subset = train_indices,
+                           mtry = 8, importance = TRUE)
+```
+
+```{r}
+yhat.rf <- predict(bag.cardio, newdata = data[-train_indices, ])
+
+```
+
+```{R}
+test_errors[7] = 1 - mean(yhat.rf == test.Y)
+```
+
+```{r}
+library(randomForest)
+rf.cardio <- randomForest(cardio ~. , data = selected, subset = train_indices, importance = TRUE)
+```
+
+```{r}
+yhat.rf <- predict(rf.cardio, newdata = data[-train_indices, ])
+
+```
+
+```{R}
+test_errrors[7] = 1 - mean(yhat.rf == test.Y)
+```
 
 ```{r}
 accuracy_test <- 1 - test_errors
@@ -283,6 +313,7 @@ mean(tree.pred == test.Y)
 
 ```
 
+Same accuracy
 
 
 ### Under PCA
