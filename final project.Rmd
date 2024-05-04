@@ -13,6 +13,11 @@ data <- read.csv("cardio_train.csv", sep = ';' )
 head(data)
 
 ``` 
+```{r}
+summary(data)
+```
+
+
 
 ```{r}
 names(data)
@@ -34,10 +39,12 @@ data['cardio'] <-  as.factor(data$cardio)
 ```{r}
 # Select only numeric predictors
 numeric_data <- data[sapply(data, is.numeric)]
+numeric_data <- numeric_data[, -which(names(numeric_data) == "weight")]
 
+names(numeric_data)
+```
 
-
-
+```{R}
 # Show the numeric predictors
 cor(numeric_data)
 
@@ -255,40 +262,40 @@ table(tree.pred, train.Y)
 
 ```{r}
 ### Takes a while to run 
-    library(class)
-    k_test_error = numeric(6)
-    k <- (1:6) *2 - 1 
-    
-    min_test_error = 1
-    k_value_test = 0
-    
-    for( i in 1:6){
-        knn.pred <- knn(train.X, test.X, train.Y, k = 2*i - 1)
-        test_error <- 1 - mean(test.Y == knn.pred)
-       
-        if(test_error < min_test_error){
-          min_test_error <- test_error
-          k_value_test <- 2*i - 1
-        }
-        k_test_error[i] <- test_error
-      }
-
-    
-    plot(k,  k_test_error, xlab = "k",
-         ylab = "test error", main = "Test error vs K")
-    lines(k, k_test_error, col = 'red')
-    points(k_value_test, min_test_error, col = "blue", pch = 19, cex = 2) 
-    
-df <- data.frame(k,  k_test_error)
-
-df
+#     library(class)
+#     k_test_error = numeric(6)
+#     k <- (1:6) *2 - 1 
+#     
+#     min_test_error = 1
+#     k_value_test = 0
+#     
+#     for( i in 1:6){
+#         knn.pred <- knn(train.X, test.X, train.Y, k = 2*i - 1)
+#         test_error <- 1 - mean(test.Y == knn.pred)
+#        
+#         if(test_error < min_test_error){
+#           min_test_error <- test_error
+#           k_value_test <- 2*i - 1
+#         }
+#         k_test_error[i] <- test_error
+#       }
+# 
+#     
+#     plot(k,  k_test_error, xlab = "k",
+#          ylab = "test error", main = "Test error vs K")
+#     lines(k, k_test_error, col = 'red')
+#     points(k_value_test, min_test_error, col = "blue", pch = 19, cex = 2) 
+#     
+# df <- data.frame(k,  k_test_error)
+# 
+# df
 
 ```
 
 
 
 ```{r}
-knn.pred <- knn(train.X, test.X, train.Y, k = 7)
+knn.pred <- knn(train.X, test.X, train.Y, k = 11)
 test_error <- 1 - mean(test.Y == knn.pred)
 test_errors[6] <- test_error
 
@@ -300,21 +307,7 @@ train_errors[6] <- train_error
 
 ```
 
-```{r}
-library(randomForest)
-bag.cardio <- randomForest(cardio ~. , data = selected, subset = train_indices,
-                           mtry = 8, importance = TRUE)
-```
 
-```{r}
-yhat.rf <- predict(bag.cardio, newdata = data[-train_indices, ])
-test_errors[7] = 1 - mean(yhat.rf == test.Y)
-```
-
-```{r}
-yhat.rf <- predict(bag.cardio, newdata = data[train_indices, ])
-train_errors[7] = 1 - mean(yhat.rf == train.Y)
-```
 
 ```{r}
 library(randomForest)
@@ -324,29 +317,60 @@ rf.cardio <- randomForest(cardio ~. , data = selected, subset = train_indices,
 ```
 
 ```{r}
-yhat.rf <- predict(rf.cardio, newdata = data[-train_indices, ])
+print(1 - rf.cardio$err.rate[rf.cardio$ntree, "OOB"])
+
+```
+``
+
+```{R}
+varImpPlot(rf.cardio)
+
+```
+
+
+```{r}
+library(randomForest)
+rf.cardio_reduced <- randomForest(cardio ~ ap_hi + cholesterol + age + ap_lo + gender
+                                  , data = selected, subset = train_indices,
+      
+                                              importance = TRUE)
+```
+
+```{r}
+print(1 - rf.cardio_reduced$err.rate[rf.cardio_reduced$ntree, "OOB"])
+
+```
+
+
+
+```{r}
+yhat.rf <- predict(rf.cardio_reduced, newdata = data[-train_indices, ])
 test_errors[7] = 1 - mean(yhat.rf == test.Y)
 ```
 
 ```{r}
-yhat.rf <- predict(rf.cardio, newdata = data[train_indices, ])
+yhat.rf <- predict(rf.cardio_reduced, newdata = data[train_indices, ])
 train_errors[7] = 1 - mean(yhat.rf == train.Y)
 ```
 
 ```{R}
 library(gbm)
 boost.carido <- gbm(cardio ~., data = data[train_indices,], 
-                    distribution = 'bernoulli', n.tree = 5000, 
-                    interaction.depth = 4)
+                 distribution = "bernoulli",
+                 n.trees = 1000,
+                 interaction.depth = 1,
+                 shrinkage = 0.01,
+                 cv.folds = 5,  # using cross-validation
+                 n.minobsinnode = 10)
 ```
 
 ```{r}
-yhat.boost <- predict(boost.carido, newdata = data[-train_indices,], n.trees = 5000)
+yhat.boost <- predict(boost.carido, newdata = data[-train_indices,], n.trees = 1000)
 test_errors[8] <- 1 - mean(yhat.boost == test.Y)
 ```
 
 ```{r}
-yhat.boost <- predict(boost.carido, newdata = data[train_indices,], n.trees = 5000)
+yhat.boost <- predict(boost.carido, newdata = data[train_indices,], n.trees = 1000)
 train_errors[8] <- 1 - mean(yhat.boost == train.Y)
 ```
 
