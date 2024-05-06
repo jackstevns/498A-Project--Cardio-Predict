@@ -16,8 +16,42 @@ head(data)
 ```{r}
 summary(data)
 ```
+## remove 60 and 200 outliers on ap_hi
+## remove __ and __ outliters on ap_lo
+## remove 140 and 190 out height
+## remove weight
 
 
+```{r}
+
+# Filter data based on conditions for 'ap_hi' (Systolic Blood Pressure)
+data <- subset(data, ap_hi <= 200 & ap_hi >= 60)
+
+# Filter data based on conditions for 'ap_lo' (Diastolic Blood Pressure)
+data <- subset(data, ap_lo <= 90 & ap_lo >= 30)
+
+# Filter data based on conditions for 'height'
+data <- subset(data, height <= 190 & height >= 140)
+
+# Remove the 'weight' column
+data <- subset(data, select = -weight)
+
+# Get the number of rows in the filtered dataset
+(num_rows <- dim(data)[1])
+
+```
+```{r}
+num_rows / 70000
+```
+
+```{r}
+summary(data)
+```
+
+```{r}
+head(data)
+
+```
 
 ```{r}
 names(data)
@@ -26,6 +60,14 @@ names(data)
 
 ```{r}
 data <-  data[-1]
+
+```
+
+```{r}
+names(data)
+
+```
+```{r}
 data['gender'] <- as.factor(data$gender)
 data['cholesterol'] <-  as.factor(data$cholesterol)
 data['gluc'] <-  as.factor(data$gluc)
@@ -34,12 +76,11 @@ data['alco'] <- as.factor(data$alco)
 data['active'] <- as.factor(data$active)
 data['cardio'] <-  as.factor(data$cardio)
 
-````
+```
 
 ```{r}
 # Select only numeric predictors
 numeric_data <- data[sapply(data, is.numeric)]
-numeric_data <- numeric_data[, -which(names(numeric_data) == "weight")]
 
 names(numeric_data)
 ```
@@ -69,24 +110,10 @@ names(data)
 summary(data)
 ```
 
-
-
-
-```{r}
-attach(data)
-
-plot(cardio, age)
-```
-
-
-```{r}
-plot(cardio, height)
-```
-
 ```{r}
 sum(data$cardio == 1)
 sum(data$cardio == 0)
-````
+```
 
 ```{r}
 
@@ -104,7 +131,7 @@ significant_predictors <- p_values[p_values < 0.05]
 
 ```{r}
 
-model <- glm(cardio ~ age + height + weight + ap_hi + ap_lo + cholesterol + 
+model <- glm(cardio ~ age + height + ap_hi + ap_lo + cholesterol + 
                gluc + smoke + alco + active, data = data, family = "binomial")
 
 summary(model)
@@ -358,10 +385,7 @@ library(gbm)
 boost.carido <- gbm(cardio ~., data = data[train_indices,], 
                  distribution = "bernoulli",
                  n.trees = 1000,
-                 interaction.depth = 1,
-                 shrinkage = 0.01,
-                 cv.folds = 5,  # using cross-validation
-                 n.minobsinnode = 10)
+                 interaction.depth = 1)
 ```
 
 ```{r}
@@ -387,7 +411,7 @@ regression model about converges? I don't know?
 
 
 
-### Pruning Random Forest
+### Pruning Tree
 
 ```{r}
 set.seed(7)
