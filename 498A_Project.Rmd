@@ -1,0 +1,206 @@
+---
+title: "Proposal"
+author: "Libby Tiderman"
+date: "2024-04-10"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(xtable)
+library(kableExtra)
+library(egg)
+library(patchwork)
+```
+
+```{r}
+cardio <- read_csv2('/Users/libbytiderman/Library/Mobile Documents/com~apple~CloudDocs/2023-2024 Documents/Spring 2024/DATA 498A/cardio_train.csv', )
+```
+
+```{r}
+cardio <- cardio[-1]
+cardio['gender'] <- factor(cardio$gender, levels = c(1:2), labels = c('Male', 'Female'))
+cardio['cholesterol'] <-  factor(cardio$cholesterol, levels = c(1:3), labels = c('Normal', 'Above Normal', "Well Above"))
+cardio['gluc'] <-  factor(cardio$gluc, levels = c(1:3), labels = c('Normal', 'Above Normal', "Well Above"))
+cardio$age_years <- cardio$age/365
+```
+
+# Summary Stats
+
+```{r}
+# Generate descriptive statistics for numeric variables
+summary_stats <- descr(cardio[, sapply(cardio, is.numeric)], stats = c("mean","med", "sd", "min", "max"), transpose = TRUE, order = 'preserve')
+summary_stats %>% 
+  kbl(align = "l", digits = 2) %>% 
+  kable_classic_2(full_width = F) %>% 
+  kable_styling(latex_options = "hold_position")
+```
+
+```{r}
+cardio['smoke'] <-factor(cardio$smoke, levels = c(0:1), labels = c('Non-Smoker', 'Smoker'))
+cardio['alco'] <- factor(cardio$alco, levels = c(0:1), labels = c('No', 'Yes'))
+cardio['active'] <- factor(cardio$active, levels = c(0:1), labels = c('Not Active', 'Active'))
+cardio['cardio'] <-  factor(cardio$cardio, levels = c(0:1), labels = c('Absent', 'Present'))
+cardio <- cardio %>% 
+  filter(ap_hi>=60, ap_hi<=200, ap_lo>=40, ap_lo<=140)
+```
+
+```{r}
+age_boxplot <- ggplot(cardio, aes(cardio, age))+
+  geom_boxplot(aes(fill = cardio))+ 
+  guides(fill=guide_legend(title="Cardio"))+
+  xlab('Cardio')+
+  ylab('Age (Days)')+
+  theme_bw()+
+  ggtitle("Age")+
+  theme(text=element_text(size=12,  family="Times New Roman"), plot.title = element_text(hjust = 0.5))
+age_boxplot
+```
+
+
+```{r}
+height_boxplot <- ggplot(cardio, aes(cardio, height))+
+  geom_boxplot(aes(fill = cardio))+ 
+  guides(fill=guide_legend(title="Cardio"))+
+  xlab('Cardio')+
+  ylab('Height (cm)')+
+  theme_bw()+
+  ggtitle("Height")+
+  theme(text=element_text(size=12,  family="Times New Roman"), plot.title = element_text(hjust = 0.5))
+height_boxplot
+```
+
+```{r}
+combined <- age_boxplot + height_boxplot & theme(legend.position = "bottom")
+combined + plot_layout(guides = "collect")
+```
+
+```{r}
+aphi_boxplot <- ggplot(cardio, aes(cardio, ap_hi))+
+  geom_boxplot(aes(fill = cardio))+ 
+  guides(fill=guide_legend(title="Cardio"))+
+  xlab('Cardio')+
+  ylab('Systolic blood pressure ')+
+  theme_bw()
+aphi_boxplot
+```
+
+```{r}
+aplo_boxplot <- ggplot(cardio, aes(cardio, ap_lo))+
+  geom_boxplot(aes(fill = cardio))+ 
+  guides(fill=guide_legend(title="Cardio"))+
+  xlab('Cardio')+
+  ylab('Diastolic blood pressure')+
+  theme_bw()
+aplo_boxplot
+```
+
+```{r}
+ap_scatter <- ggplot(cardio, aes(ap_hi, ap_lo))+
+  geom_point(aes(col = cardio))+ 
+  guides(col=guide_legend(title="Cardio"))+
+  xlab('Systolic Blood Pressure')+
+  ylab('Diastolic Blood Pressure')+
+  theme_bw()+
+  theme(text=element_text(size=12,  family="Times New Roman"))
+ap_scatter
+```
+
+```{r}
+ah_scatter <- ggplot(cardio, aes(age, height))+
+  geom_point(aes(col = cardio))+ 
+  guides(col=guide_legend(title="Cardio"))+
+  xlab('Age (days)')+
+  ylab('Height (cm)')+
+  theme_bw()
+ah_scatter
+```
+
+```{r}
+ahi_scatter <- ggplot(cardio, aes(age, ap_hi))+
+  geom_point(aes(col = cardio))+ 
+  geom_jitter(aes(col = cardio))+
+  guides(col=guide_legend(title="Cardio"))+
+  xlab('Age (days)')+
+  ylab('Systolic blood pressure')+
+  theme_bw()
+ahi_scatter
+```
+
+```{r}
+hhi_scatter <- ggplot(cardio, aes(height, ap_hi))+
+  geom_point(aes(col = cardio))+ 
+  geom_jitter(aes(col = cardio))+
+  guides(col=guide_legend(title="Cardio"))+
+  xlab('Height (cm)')+
+  ylab('Systolic blood pressure')+
+  theme_bw()
+hhi_scatter
+```
+
+```{r}
+gluc_bar <- ggplot(data = cardio) +
+  geom_bar(aes(x = gluc, fill = cardio), position = "fill")+
+  guides(fill=guide_legend(title="Cardio"))+
+  ylab('Proportion')+
+  theme_bw()+
+  ggtitle("Glucose Level")+
+  theme(text=element_text(size=12,  family="Times New Roman"), axis.title.x=element_blank(), plot.title = element_text(hjust = 0.5))
+gluc_bar
+```
+
+```{r}
+chol_bar <- ggplot(data = cardio) +
+  geom_bar(aes(x = cholesterol, fill = cardio), position = "fill")+
+  guides(fill=guide_legend(title="Cardio"))+
+  ylab('Proportion')+
+  theme_bw()+
+  ggtitle("Cholesterol Level")+
+  theme(text=element_text(size=12,  family="Times New Roman"), axis.title.x=element_blank(), plot.title = element_text(hjust = 0.5))
+chol_bar
+```
+
+```{r}
+combined <- gluc_bar + chol_bar & theme(legend.position = "bottom")
+combined + plot_layout(guides = "collect")
+```
+
+```{r}
+smoke_bar <- ggplot(data = cardio) +
+  geom_bar(aes(x = smoke, fill = cardio), position = "fill")+
+  guides(fill=guide_legend(title="Cardio"))+
+  ylab('Proportion')+
+  theme_bw()+
+  ggtitle('Smoking Status')+
+  theme(text=element_text(size=12,  family="Times New Roman"), axis.title.x=element_blank(), plot.title = element_text(hjust = 0.5))
+smoke_bar
+```
+
+```{r}
+alco_bar <- ggplot(data = cardio) +
+  geom_bar(aes(x = alco, fill = cardio), position = "fill")+
+  guides(fill=guide_legend(title="Cardio"))+
+  ylab('Proportion')+
+  theme_bw()+
+  ggtitle('Alcohol Consumption')+
+  theme(text=element_text(size=12,  family="Times New Roman"),plot.title = element_text(hjust = 0.5), axis.title.x=element_blank())
+alco_bar
+```
+
+```{r}
+active_bar <- ggplot(data = cardio) +
+  geom_bar(aes(x = active, fill = cardio), position = "fill")+
+  guides(fill=guide_legend(title="Cardio"))+
+  ylab('Proportion')+
+  theme_bw()+
+  ggtitle("Activity Level")+
+  theme(text=element_text(size=12,  family="Times New Roman"), plot.title = element_text(hjust = 0.5), axis.title.x=element_blank())
+active_bar
+```
+
+```{r}
+combined <- smoke_bar + alco_bar + active_bar & theme(legend.position = "bottom")
+combined + plot_layout(guides = "collect")
+```
+
