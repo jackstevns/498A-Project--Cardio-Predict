@@ -263,8 +263,6 @@ table(tree.pred, test.Y)
 
 ```
 
-## KNN
-
 ```{r}
 tree.pred <- predict(tree.cardio, train.X, type = "class")
 table(tree.pred, train.Y)
@@ -323,7 +321,7 @@ train_errors[6] <- train_error
 
 ```
 
-## Random Forest
+
 
 ```{r}
 library(randomForest)
@@ -369,7 +367,7 @@ yhat.rf <- predict(rf.cardio, newdata = data[train_indices, ])
 train_errors[7] = 1 - mean(yhat.rf == train.Y)
 ```
 
-## Results
+
 
 ```{r}
 accuracy_test <- 1 - test_errors
@@ -379,12 +377,13 @@ df_interaction <- data.frame(method, test_errors, accuracy_test, train_errors,
 df_sorted <- arrange(df_interaction, test_errors)
 df_sorted
 ```
+Logistic and Regression looks good. Maybe PCA / Lasso might 
+help with logistic regression accuracy. This is a warming with the logistic 
+regression model about converges? I don't know? 
 
 
 
-## Testing All Features in Random Forest model 
-
-
+#### testing new features in Random Forest model 
 ```{r}
 names(data)
 
@@ -407,13 +406,12 @@ print( mean(yhat.rf == test.Y))
 ```
 
 
+
+
 ```{r}
 varImpPlot(rf.cardio_reduced, main = "Random Forest Model-Full")
 
 ```
-
-## Confusion Matrix
-
 ```{r}
 
 library(ggplot2)
@@ -435,30 +433,10 @@ ggplot(data = cm_melted, aes(y = Actual, x = Predicted, fill = value)) +
 ```
 
 
-## ROC Curve
-
-```{r}
-test <- data[-train_indices, ]
-predict.rf <- predict(rf.cardio_reduced, newdata = test, type = "prob")
-library(pROC)
-ROC_rf <- roc(test$cardio, predict.rf[,2])
-```
-
-```{R}
-plot(ROC_rf, col = "red", main = "ROC For Random Forest")
-```
-```{R}
-varImpPlot(rf.cardio_reduced, main = "Random Forest Model-Redcued")
-```
-
-
-## Reduced Model 
-
 ```{R}
 
 library(randomForest)
-rf.cardio_reduced <- randomForest(cardio ~ ap_hi + cholesterol + age + ap_lo + 
-                                    gluc + height
+rf.cardio_reduced <- randomForest(cardio ~ ap_hi + cholesterol + age + ap_lo + gluc + height
                                   , data = data, subset = train_indices,
                                   importance = TRUE)
 ```
@@ -469,8 +447,6 @@ yhat.rf <- predict(rf.cardio_reduced, newdata = data[-train_indices, ])
 print( mean(yhat.rf == test.Y))
 ```
 
-## Confusion Matrix
-
 ```{r}
 
 library(ggplot2)
@@ -490,7 +466,7 @@ ggplot(data = cm_melted, aes(y = Actual, x = Predicted, fill = value)) +
 
 ```
 
-## ROC Curve
+
 
 ```{r}
 test <- data[-train_indices, ]
@@ -505,8 +481,6 @@ plot(ROC_rf, col = "red", main = "ROC For Random Forest")
 ```{R}
 varImpPlot(rf.cardio_reduced, main = "Random Forest Model-Redcued")
 ```
-
-### Hyperpamater Tunning
 
 ```{r}
 
@@ -518,24 +492,24 @@ mtrys <- c(1, 2, 3, 4, 5, 6)
 
 ```
 
-
+### Hyperpamater Tunning
 
 ```{r}
 
-# init <-  1
-# for( i in 1:4){
-#   for(j in 1:6){
-#     rf.cardio <- randomForest(cardio ~ ap_hi + cholesterol + age + ap_lo + gluc,
-#                  data = data, subset = train_indices, mtry = mtrys[j],
-#                  ntree = ntree[i], importance = TRUE)
-#     mtry_test[init] <- mtrys[j]
-#     tree_test[init] <- ntree[i]
-#     yhat.rf <- predict(rf.cardio, newdata = data[-train_indices, ])
-#     accuracy[init] = mean(yhat.rf == test.Y)
-#     init <- init + 1
-#    
-#   }
-# }
+init <-  1
+for( i in 1:4){
+  for(j in 1:6){
+    rf.cardio <- randomForest(cardio ~ ap_hi + cholesterol + age + ap_lo + gluc,
+                 data = data, subset = train_indices, mtry = mtrys[j],
+                 ntree = ntree[i], importance = TRUE)
+    mtry_test[init] <- mtrys[j]
+    tree_test[init] <- ntree[i]
+    yhat.rf <- predict(rf.cardio, newdata = data[-train_indices, ])
+    accuracy[init] = mean(yhat.rf == test.Y)
+    init <- init + 1
+   
+  }
+}
 ```
 
 ```{R}
